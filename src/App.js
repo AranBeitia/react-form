@@ -6,6 +6,8 @@ import React from 'react'
 // Custom
 import * as api from './api'
 import { readLocalStorage, writeLocalStorage } from './utils/localStorage'
+import Home from './pages/Home'
+import products from './utils/demo-data'
 
 class App extends React.Component {
 	constructor(props) {
@@ -19,24 +21,38 @@ class App extends React.Component {
 		}
 	}
 
-	componentDidMount() {
-		this.setState((prevState) => ({
-			...prevState,
-			isFetchingProducts: true,
-		}))
+  componentDidMount() {
 
-		api.getProducts().then((data) => {
-			this.setState((prevState) => ({
-				...prevState,
-				products: data,
-				isFetchingProducts: false,
-				isFetchingSuccess: true,
-				fetchError: null,
-			}))
-		})
+    this.setState((prevState) => ({
+      ...prevState,
+      isFetchingProducts: true,
+    }));
+
+    const products = readLocalStorage("products");
+
+    if (!products || products.length <= 0) {
+      api.getProducts().then((data) => {
+        this.setState((prevState) => ({
+          ...prevState,
+          products: data,
+          isFetchingProducts: false,
+          isFetchingSuccess: true,
+          fetchError: null
+        }));
+      }).catch(() => {
+        this.setState((prevState) => ({
+          ...prevState,
+          isFetchingProducts: false,
+          isFetchingError: true,
+          fetchError: null
+        }));
+      });
+    }
+  }
+
+	componentDidUpdate() {
+		writeLocalStorage('app-state', JSON.stringify(products))
 	}
-
-	componentDidUpdate() {}
 
 	render() {
 		const { products, isFetchingProducts, isFetchingSuccess, fetchError } =
@@ -44,11 +60,12 @@ class App extends React.Component {
 
 		return (
 			<>
-				{isFetchingProducts && <h4>Fetching products...</h4>}
-        {}
-				{!isFetchingProducts &&
-					isFetchingSuccess ?
-					products.map((item) => <p>{item.title}</p>) : "No products"}
+				<Home
+					products={products}
+					isFetchingProducts={isFetchingProducts}
+					isFetchingSuccess={isFetchingSuccess}
+					fetchError={fetchError}
+				/>
 			</>
 		)
 	}
